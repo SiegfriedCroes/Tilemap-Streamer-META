@@ -1,12 +1,13 @@
+## TILEMAP STREAMER for the Gamebuino META
+[Link to creation and topic for discussion](https://gamebuino.com/creations/tilemap-streamer)
+
 ## WHAT IS IT?
-This tech demo lets you move around a map of 512x512 tiles (8x8 pixels each) which gets streamed from the SD card in real time. It also lets you add/remove blocks and these changes will be saved to the SD card right away.
+This tech demo lets you move around a large map (size: 3840x3072 pixels, 480x384 tiles of 8x8 pixels each or 48x48 blocks of 80x64 pixels each) that gets streamed from the SD card in real time. It also lets you add/remove blocks and these changes will be saved to the SD card right away.
 
 ## HOW DOES IT WORK?
-There's a tilebuffer of 11x9 tiles which is one tile more in both directions than what is needed to fill the screen so the camera has some freedom to move around within this buffer smoothly. When the camera moves outside this buffer, all tiles in the tilebuffer gets shifted in the opposite direction and a new strip of tiles get streamed from the SD card file and put into the tilebuffer.
+There are 4 buffers each the size of the screen (that's 10x8 tiles). As you move around the map these buffers get swapped around and filled with new parts of the map to make it seem like it's one big map.
 
-To make reading these strips from the SD card faster, the tilemap data is stored in the SD card file twice: once for reading horizontal strips from left to right and again for reading vertical strips that same way.
-
-Writing changes to the SD card is as simple as calculating the current block position you're about to edit and writing a new value to both the SD card file and tilebuffer.
+Making changes to the map is as simple as translating the cursor position to the position in the SD card file and writing the new value to it.
 
 ## CONTROLS
 D-pad: Move around
@@ -14,4 +15,4 @@ D-pad: Move around
 A button: Add/remove block
 
 ## OPTIMISATIONS
-I'm sure there is still room for improvements so if you have any ideas be sure to share them!
+Currently all 4 buffers get looped through to draw the tiles in them even when they are only partially visible or not visible at all. I'm sure it's possible to improve this to lower CPU load.
