@@ -8,51 +8,22 @@ struct Point
 
 File file;
 
-uint16_t mapSize = 512;
-
-Point camPosition;
-Point oldCamPosition;
+Point cameraPosition;
 Point cursorPosition = Point(16, 16);
-uint8_t currentCursorTile;
+bool placingTiles = false;
+int32_t previousTile;
+uint8_t currentTileType;
 
-uint8_t tileBuffer[11][9];
-uint8_t tempBuffer[11];
+uint8_t mapWidth = 0;
+uint8_t mapHeight = 0;
 
-const uint16_t tilesetData[] =
-{
-	8, 8, 2, 0, 0, 0, 
-	0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,
-	0xdf7a,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xdf7a,
-	0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,
-	0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,
-	0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,
-	0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,
-	0xdf7a,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xdf7a,
-	0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,
-	0xd3e5,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xd3e5,
-	0xd229,0xd3e5,0xd553,0xd553,0xd553,0xd553,0xd3e5,0xd229,
-	0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,
-	0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,
-	0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,
-	0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,
-	0xd229,0xd3e5,0x8266,0x8266,0x8266,0x8266,0xd3e5,0xd229,
-	0xd3e5,0x8266,0x8266,0x8266,0x8266,0x8266,0x8266,0xd3e5
-};
+const uint8_t BUFFERSIZE = 80;
+uint8_t buffer[4][BUFFERSIZE];
+
+const uint16_t tilesetData[] = {8,8,2,0,0,0,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd553,0xdf7a,0xdf7a,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xd3e5,0xd553,0xd553,0xd553,0xd553,0xd553,0xd553,0xd3e5,0xd229,0xd3e5,0xd553,0xd553,0xd553,0xd553,0xd3e5,0xd229,0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,0xd229,0xd229,0xd3e5,0xd3e5,0xd3e5,0xd3e5,0xd229,0xd229,0xd229,0xd3e5,0x8266,0x8266,0x8266,0x8266,0xd3e5,0xd229,0xd3e5,0x8266,0x8266,0x8266,0x8266,0x8266,0x8266,0xd3e5};
 Image tilesetImage = Image(tilesetData);
 
-const uint16_t cursorData[] =
-{
-	7, 9, 0, 0, 0xf81f, 0, 
-	0x84b4,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0xf81f,
-	0x84b4,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,
-	0x84b4,0xdf7a,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,
-	0x84b4,0xdf7a,0xdf7a,0xdf7a,0x84b4,0xf81f,0xf81f,
-	0x84b4,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0x84b4,0xf81f,
-	0x84b4,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0x84b4,
-	0x84b4,0xdf7a,0xdf7a,0x84b4,0x84b4,0x84b4,0x84b4,
-	0x84b4,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,
-	0x84b4,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0xf81f
-};
+const uint16_t cursorData[] = {7,9,0,0,0xf81f,0,0x84b4,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0xf81f,0x84b4,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0x84b4,0xdf7a,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,0x84b4,0xdf7a,0xdf7a,0xdf7a,0x84b4,0xf81f,0xf81f,0x84b4,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0x84b4,0xf81f,0x84b4,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0xdf7a,0x84b4,0x84b4,0xdf7a,0xdf7a,0x84b4,0x84b4,0x84b4,0x84b4,0x84b4,0xdf7a,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0x84b4,0x84b4,0xf81f,0xf81f,0xf81f,0xf81f,0xf81f};
 Image cursorImage = Image(cursorData);
 
 void setup()
@@ -62,15 +33,18 @@ void setup()
 	// Open file for reading and writing
 	file = SD.open("Test.map", O_RDWR);
 
-	// Fill tilebuffer with all tiles currently in view
-	for(uint8_t x = 0; x < 11; x++)
-	{
-		for(uint8_t y = 0; y < 9; y++)
-		{
-			file.seek(x + camPosition.x + (mapSize * (camPosition.y + y)));
-			tileBuffer[x][y] = file.read();
-		}
-	}
+	// Get map width and height
+	mapWidth = file.read();
+	mapHeight = file.read();
+	
+	// Fill buffers with all tiles currently in view
+	file.seek(2);
+	file.read(buffer[0], BUFFERSIZE);
+	file.read(buffer[1], BUFFERSIZE);
+
+	file.seek((mapWidth * BUFFERSIZE) + 2);
+	file.read(buffer[2], BUFFERSIZE);
+	file.read(buffer[3], BUFFERSIZE);
 }
 
 void loop()
@@ -79,20 +53,35 @@ void loop()
 	{
 		gb.display.fill(WHITE);
 
-		// Draw tilebuffer
-		for(uint8_t x = 0; x < 11; x++)
+		// Draw buffers
+		for(uint8_t i = 0; i < BUFFERSIZE; i++)
 		{
-			for(uint8_t y = 0; y < 9; y++)
-			{
-				tilesetImage.setFrame(tileBuffer[x][y] - 48);
-				gb.display.drawImage((-camPosition.x % 8) + (x * 8), (-camPosition.y % 8) + (y * 8), tilesetImage);
-			}
+			tilesetImage.setFrame(buffer[0][i]);
+			gb.display.drawImage((((i % 10) * 8) - cameraPosition.x - 80) % 160 + 80, (((i / 10) * 8) - cameraPosition.y - 64) % 128 + 64, tilesetImage);
 		}
 
-		// Draw cursor and green selection rect
+		for(uint8_t i = 0; i < BUFFERSIZE; i++)
+		{
+			tilesetImage.setFrame(buffer[1][i]);
+			gb.display.drawImage((((i % 10) * 8) - cameraPosition.x) % 160 + 80, (((i / 10) * 8) - cameraPosition.y - 64) % 128 + 64, tilesetImage);
+		}
+
+		for(uint8_t i = 0; i < BUFFERSIZE; i++)
+		{
+			tilesetImage.setFrame(buffer[2][i]);
+			gb.display.drawImage((((i % 10) * 8) - cameraPosition.x - 80) % 160 + 80, (((i / 10) * 8) - cameraPosition.y) % 128 + 64, tilesetImage);
+		}
+
+		for(uint8_t i = 0; i < BUFFERSIZE; i++)
+		{
+			tilesetImage.setFrame(buffer[3][i]);
+			gb.display.drawImage((((i % 10) * 8) - cameraPosition.x) % 160 + 80, (((i / 10) * 8) - cameraPosition.y) % 128 + 64, tilesetImage);
+		}
+
+		// Draw cursor and tile selection rect
 		gb.display.setColor((Color) 0x6d45);
-		gb.display.drawRect((cursorPosition.x / 8 * 8) - camPosition.x, (cursorPosition.y / 8 * 8) - camPosition.y, 8, 8);
-		gb.display.drawImage(cursorPosition.x - camPosition.x, cursorPosition.y - camPosition.y, cursorImage);
+		gb.display.drawRect((cursorPosition.x / 8 * 8) - cameraPosition.x, (cursorPosition.y / 8 * 8) - cameraPosition.y, 8, 8);
+		gb.display.drawImage(cursorPosition.x - cameraPosition.x, cursorPosition.y - cameraPosition.y, cursorImage);
 
 		// Draw stats
 		gb.display.setColor((Color) 0x1063);
@@ -101,11 +90,6 @@ void loop()
 		gb.display.print(gb.getCpuLoad());
 		gb.display.print(" RAM: ");
 		gb.display.print(gb.getFreeRam());
-		gb.display.setCursor(1, 64 - 6);
-		gb.display.print("X: ");
-		gb.display.print(camPosition.x);
-		gb.display.print(" Y: ");
-		gb.display.print(camPosition.y);
 
 		// Handle movement
 		if(gb.buttons.repeat(BUTTON_UP, 1)) cursorPosition.y -= 2;
@@ -113,107 +97,95 @@ void loop()
 		if(gb.buttons.repeat(BUTTON_LEFT, 1)) cursorPosition.x -= 2;
 		if(gb.buttons.repeat(BUTTON_RIGHT, 1)) cursorPosition.x += 2;
 
-		cursorPosition = Point(max(cursorPosition.x, 0), max(cursorPosition.y, 0));
+		cursorPosition = Point(constrain(cursorPosition.x, 0, (mapWidth * 80) - 1), constrain(cursorPosition.y, 0, (mapHeight * 64) - 1));
 
-		camPosition = Point(max(cursorPosition.x - 40, 0), max(cursorPosition.y - 32, 0));
+		Point previousCameraPosition = cameraPosition;
+		cameraPosition = Point(constrain(cursorPosition.x - 40, 0, (mapWidth - 1) * 80), constrain(cursorPosition.y - 32, 0, (mapHeight - 1) * 64));
 
-		if(oldCamPosition.x / 8 != camPosition.x / 8 || oldCamPosition.y / 8 != camPosition.y / 8)
+		// Handle editing
+		if(gb.buttons.repeat(BUTTON_A, 1))
 		{
-			updateTilemap();
-			oldCamPosition = camPosition;
-		}
+			Point cursorPositionNormalized = Point(cursorPosition.x / 8, cursorPosition.y / 8);
 
-		// Handle adding/removing tiles
-		if(gb.buttons.pressed(BUTTON_A))
-		{
-			currentCursorTile = tileBuffer[(cursorPosition.x - camPosition.x) / 8][(cursorPosition.y - camPosition.y) / 8];
-			currentCursorTile = (currentCursorTile == 48)?49:48;
-		}
-		else if(gb.buttons.repeat(BUTTON_A, 1))
-		{
-			if(tileBuffer[(cursorPosition.x - camPosition.x) / 8][(cursorPosition.y - camPosition.y) / 8] != currentCursorTile)
+			uint16_t currentBlock = (cursorPositionNormalized.x / 10) + ((cursorPositionNormalized.y / 8) * mapWidth);
+
+			Point tileInBlock = Point(cursorPositionNormalized.x - (cursorPositionNormalized.x / 10 * 10), cursorPositionNormalized.y - (cursorPositionNormalized.y / 8 * 8));
+
+			int32_t currentTile = (currentBlock * BUFFERSIZE) + 2 + (tileInBlock.x + (tileInBlock.y * 10));
+			
+			if(currentTile != previousTile)
 			{
-				tileBuffer[(cursorPosition.x - camPosition.x) / 8][(cursorPosition.y - camPosition.y) / 8] = currentCursorTile;
+				file.seek(currentTile);
 
-				file.seek((cursorPosition.x / 8) + (mapSize * (cursorPosition.y / 8)));
-				file.write(currentCursorTile);
+				if(!placingTiles)
+				{
+					currentTileType = (file.peek() == 1)?0:1;
+					placingTiles = true;
+				}
 
-				file.seek((mapSize * mapSize) + (cursorPosition.y / 8) + (mapSize * (cursorPosition.x / 8)));
-				file.write(currentCursorTile);
+				file.write(currentTileType);
+				file.flush();
+
+				file.seek((((currentTile - 2) / 80) * 80) + 2);
+
+				Point currentTileInBlock = Point(((currentTile - 2) / 80) % mapWidth, ((currentTile - 2) / 80) / mapWidth);
+
+				file.read((currentTileInBlock.x % 2)?buffer[(currentTileInBlock.y % 2)?3:1]:buffer[(currentTileInBlock.y % 2)?2:0], BUFFERSIZE);
+
+				previousTile = currentTile;
 			}
 		}
-	}
-}
-
-void updateTilemap()
-{
-	Point newPos = Point(camPosition.x / 8, camPosition.y / 8);
-	Point oldPos = Point(oldCamPosition.x / 8, oldCamPosition.y / 8);
-
-	// Check for horizontal movement
-	if(newPos.x < oldPos.x)
-	{
-		// Read vertical strip of new tiles to the left and store them into the tempbuffer
-		file.seek((mapSize * mapSize) + oldPos.y + (mapSize * (newPos.x)));
-		file.read(&tempBuffer, 9);
-
-		// Shift all tiles in tilebuffer to the right and add new tiles on the left
-		for(int8_t y = 0; y < 9; y++)
+		if(gb.buttons.released(BUTTON_A))
 		{
-			for(int8_t x = 10; x >= 0; x--)
-			{
-				if(x > 0) tileBuffer[x][y] = tileBuffer[x - 1][y];
-				else tileBuffer[0][y] = tempBuffer[y];
-			}
+			placingTiles = false;
+			previousTile = -1;
 		}
-	}
-	else if(newPos.x > oldPos.x)
-	{
-		// Read vertical strip of new tiles to the right and store them into the tempbuffer
-		file.seek((mapSize * mapSize) + oldPos.y + (mapSize * (newPos.x + 10)));
-		file.read(&tempBuffer, 9);
 
-		// Shift all tiles in tilebuffer to the left and add new tiles on the right
-		for(int8_t y = 0; y < 9; y++)
+		// Update buffers
+		if(previousCameraPosition.x / 80 != cameraPosition.x / 80 || previousCameraPosition.y / 64 != cameraPosition.y / 64)
 		{
-			for(int8_t x = 0; x < 11; x++)
+			Point cameraPositionNormalized = Point(cameraPosition.x / 80, cameraPosition.y / 64);
+
+			// Horizontal change
+			if(previousCameraPosition.x / 80 != cameraPosition.x / 80)
 			{
-				if(x < 10) tileBuffer[x][y] = tileBuffer[x + 1][y];
-				else tileBuffer[10][y] = tempBuffer[y];
+				if((cameraPosition.x / 80) - (previousCameraPosition.x / 80) > 0) // Moved right
+				{
+					file.seek((((cameraPositionNormalized.x + 1) + (mapWidth * cameraPositionNormalized.y)) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.x % 2)?buffer[(cameraPositionNormalized.y % 2)?2:0]:buffer[(cameraPositionNormalized.y % 2)?3:1], BUFFERSIZE);
+
+					file.seek((((cameraPositionNormalized.x + 1 + mapWidth) + (mapWidth * cameraPositionNormalized.y)) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.x % 2)?buffer[(cameraPositionNormalized.y % 2)?0:2]:buffer[(cameraPositionNormalized.y % 2)?1:3], BUFFERSIZE);
+				}
+				else // Moved left
+				{
+					file.seek(((cameraPositionNormalized.x + (mapWidth * cameraPositionNormalized.y)) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.x % 2)?buffer[(cameraPositionNormalized.y % 2)?3:1]:buffer[(cameraPositionNormalized.y % 2)?2:0], BUFFERSIZE);
+
+					file.seek((((cameraPositionNormalized.x + mapWidth) + (mapWidth * cameraPositionNormalized.y)) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.x % 2)?buffer[(cameraPositionNormalized.y % 2)?1:3]:buffer[(cameraPositionNormalized.y % 2)?0:2], BUFFERSIZE);
+				}
 			}
-		}
-	}
 
-	// Check for vertical movement
-	if(newPos.y < oldPos.y)
-	{
-		// Read horizontal strip of new tiles above and store them into the tempbuffer
-		file.seek(newPos.x + (mapSize * (newPos.y)));
-		file.read(&tempBuffer, 11);
-
-		// Shift all tiles in tilebuffer downwards and add new tiles above
-		for(int8_t x = 0; x < 11; x++)
-		{
-			for(int8_t y = 8; y >= 0; y--)
+			// Vertical change
+			if(previousCameraPosition.y / 64 != cameraPosition.y / 64)
 			{
-				if(y > 0) tileBuffer[x][y] = tileBuffer[x][y - 1];
-				else tileBuffer[x][0] = tempBuffer[x];
-			}
-		}
-	}
-	else if(newPos.y > oldPos.y)
-	{
-		// Read horizontal strip of new tiles below and store them into the tempbuffer
-		file.seek(newPos.x + (mapSize * (newPos.y + 8)));
-		file.read(&tempBuffer, 11);
+				if((cameraPosition.y / 64) - (previousCameraPosition.y / 64) > 0)
+				{
+					file.seekSet(((((cameraPositionNormalized.y + 1) * mapWidth) + cameraPositionNormalized.x) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.y % 2)?buffer[(cameraPositionNormalized.x % 2)?1:0]:buffer[(cameraPositionNormalized.x % 2)?3:2], BUFFERSIZE);
 
-		// Shift all tiles in tilebuffer upwards and add new tiles below
-		for(int8_t x = 0; x < 11; x++)
-		{
-			for(int8_t y = 0; y < 9; y++)
-			{
-				if(y < 8) tileBuffer[x][y] = tileBuffer[x][y + 1];
-				else tileBuffer[x][8] = tempBuffer[x];
+					file.seekSet(((((cameraPositionNormalized.y + 1) * mapWidth) + cameraPositionNormalized.x + 1) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.y % 2)?buffer[(cameraPositionNormalized.x % 2)?0:1]:buffer[(cameraPositionNormalized.x % 2)?2:3], BUFFERSIZE);
+				}
+				else
+				{
+					file.seekSet((((cameraPositionNormalized.y * mapWidth) + cameraPositionNormalized.x) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.y % 2)?buffer[(cameraPositionNormalized.x % 2)?3:2]:buffer[(cameraPositionNormalized.x % 2)?1:0], BUFFERSIZE);
+
+					file.seekSet((((cameraPositionNormalized.y * mapWidth) + cameraPositionNormalized.x + 1) * BUFFERSIZE) + 2);
+					file.read((cameraPositionNormalized.y % 2)?buffer[(cameraPositionNormalized.x % 2)?2:3]:buffer[(cameraPositionNormalized.x % 2)?0:1], BUFFERSIZE);
+				}
 			}
 		}
 	}
